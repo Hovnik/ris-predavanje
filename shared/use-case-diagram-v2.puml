@@ -1,0 +1,84 @@
+@startuml use-case-diagram-detailed
+left to right direction
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+skinparam usecase {
+  BackgroundColor #FFFDE7
+  BorderColor #5D4037
+  ArrowColor #37474F
+}
+skinparam actor {
+  BorderColor #1A237E
+  BackgroundColor #E3F2FD
+  FontColor #1A237E
+}
+
+title Diagram primerov uporabe\nIS Program lojalnosti Maestro
+
+' ===== ACTORS =====
+actor "Stranka" as Member
+actor "Administrator" as Admin
+actor "Cron Job" as CronJob <<system>>
+actor "Poslovni IS" as BizIS <<external>>
+actor "E-poštni strežnik" as EmailSrv <<external>>
+
+' ===== SYSTEM BOUNDARY =====
+rectangle "IS Program lojalnosti Maestro" {
+
+  usecase "Registracija [FZ1–FZ3]" as UC_Register
+  usecase "Potrditev e-naslova [FZ3]" as UC_VerifyEmail
+  usecase "Prijava" as UC_Login
+
+  usecase "Pregled profila in statusa" as UC_Profile
+  usecase "Pregled točk in transakcij [FZ22]" as UC_Points
+  usecase "Pregled nakupov [FZ24, FZ25]" as UC_Purchases
+  usecase "Unovčevanje nagrade [FZ23]" as UC_Redeem
+  usecase "Pregled kartice lojalnosti [FZ5]" as UC_Card
+
+  usecase "Uvoz nakupov iz CSV [FZ10]" as UC_ImportCSV
+  usecase "Mesečni obračun [FZ9, FZ21]" as UC_RunBatch
+  usecase "Pregled stanja obračuna" as UC_BatchStatus
+
+  usecase "Pregled članov [FZ26]" as UC_MemberList
+  usecase "Pregled statistike nakupov [FZ27]" as UC_Statistics
+  usecase "Izvoz podatkov za pošiljanje kartic" as UC_CardExport
+
+  usecase "Upravljanje nagrad [FZ29]" as UC_ManageRewards
+  usecase "Upravljanje pravil [FZ12, FZ30]" as UC_ManageRules
+
+}
+
+' ===== STRANKA =====
+Member --> UC_Register
+Member --> UC_Login
+Member --> UC_Profile
+Member --> UC_Points
+Member --> UC_Purchases
+Member --> UC_Redeem
+Member --> UC_Card
+
+' ===== ADMINISTRATOR =====
+Admin --> UC_Login
+Admin --> UC_ImportCSV
+Admin --> UC_RunBatch
+Admin --> UC_BatchStatus
+Admin --> UC_MemberList
+Admin --> UC_Statistics
+Admin --> UC_CardExport
+Admin --> UC_ManageRewards
+Admin --> UC_ManageRules
+
+' ===== CRON JOB =====
+CronJob --> UC_RunBatch
+
+' ===== ZUNANJI SISTEMI =====
+BizIS --> UC_ImportCSV : "izvoz nakupov (CSV)"
+UC_Register --> EmailSrv : "verifikacijska e-pošta"
+UC_RunBatch --> EmailSrv : "alarm ob napaki"
+
+' ===== INCLUDE =====
+UC_Register .> UC_VerifyEmail : <<include>>
+
+@enduml
