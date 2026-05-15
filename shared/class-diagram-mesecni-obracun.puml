@@ -1,0 +1,86 @@
+@startuml class-diagram-mesecni-obracun
+
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor<<boundary>> #DBEAFE
+  BorderColor<<boundary>>     #1D4ED8
+  BackgroundColor<<control>>  #FEF9C3
+  BorderColor<<control>>      #B45309
+  BackgroundColor<<entity>>   #DCFCE7
+  BorderColor<<entity>>       #166534
+  ArrowColor                  #37474F
+  FontName                    Arial
+}
+
+title Razredni diagram — Mesečni obračun [FZ9, FZ21]
+
+' ===== BOUNDARY =====
+class UvozNakupovForm <<boundary>> {
+  + naloziCSV(datoteka: File)
+  + izbereMesec(mesec: String)
+  + sprozi()
+}
+
+class BatchStatusPogled <<boundary>> {
+  + prikaziRezultate(mesec: String)
+}
+
+' ===== CONTROL =====
+class BatchController <<control>> {
+  + uvozNakupov(datoteka: File, mesec: String): void
+  + zozeniObracun(mesec: String): void
+  + pridobiStanje(mesec: String): ObracunStatus
+}
+
+class BatchService <<control>> {
+  + uvozi(datoteka: File, mesec: String): int
+  + izvedeObracun(mesec: String): void
+  - posodobiStatuse(mesec: String): void
+  - dodelijTocke(mesec: String): void
+}
+
+' ===== ENTITY =====
+class Nakup_mesecni <<entity>> {
+  - stranka_id: int
+  - mesec: String
+  - znesek_nakupov: float
+  + uvozi(): void
+  + najdiZaMesec(mesec: String): List
+}
+
+class Obracun_mesecni <<entity>> {
+  - mesec: String
+  - datum_obracuna: Date
+  - obdelanih_clanov: int
+  - skupaj_dodeljenih_tock: int
+  + ustvari(mesec: String): Obracun_mesecni
+  + zakljuci(): void
+}
+
+class Status_stranke <<entity>> {
+  - stranka_id: int
+  - nivo_id: int
+  - od: Date
+  - do: Date
+  + zakljuciTekoci(): void
+  + ustvariNovi(stranka_id: int, nivo_id: int): Status_stranke
+}
+
+class Tocke_stranke <<entity>> {
+  - stranka_id: int
+  - skupaj_tock: int
+  + posodobiStanje(delta: int): void
+}
+
+' ===== RELACIJE =====
+UvozNakupovForm   --> BatchController : uvozNakupov() / zozeniObracun()
+BatchStatusPogled --> BatchController : pridobiStanje()
+
+BatchController --> BatchService
+
+BatchService --> Nakup_mesecni   : beri
+BatchService --> Obracun_mesecni : ustvari / zakljuci
+BatchService --> Status_stranke  : zakljuci / ustvari
+BatchService --> Tocke_stranke   : posodobiStanje()
+
+@enduml

@@ -1,0 +1,89 @@
+@startuml class-diagram-registracija
+
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor<<boundary>> #DBEAFE
+  BorderColor<<boundary>>     #1D4ED8
+  BackgroundColor<<control>>  #FEF9C3
+  BorderColor<<control>>      #B45309
+  BackgroundColor<<entity>>   #DCFCE7
+  BorderColor<<entity>>       #166534
+  ArrowColor                  #37474F
+  FontName                    Arial
+}
+
+title Razredni diagram — Registracija [FZ1–FZ3]
+
+' ===== BOUNDARY =====
+class RegistracijaForm <<boundary>> {
+  + vnesiPodatke()
+  + potrdiRegistracijo()
+  + prikaziNapako(sporocilo: String)
+}
+
+class VerifikacijaEmailStran <<boundary>> {
+  + prikaziPotrditev()
+  + posredujZeton(zeton: String)
+}
+
+' ===== CONTROL =====
+class RegistracijaController <<control>> {
+  + registriraj(ime, priimek, email, geslo, naslov): void
+  + potrdiEmail(zeton: String): void
+}
+
+class EmailService <<control>> {
+  + generirajZeton(): String
+  + posljiVerifikacijskoEmail(email: String, zeton: String): void
+}
+
+' ===== ENTITY =====
+class Stranka <<entity>> {
+  - stranka_id: int
+  - ime: String
+  - priimek: String
+  - email: String
+  - geslo_hash: String
+  - email_verificiran: boolean
+  + ustvari(): Stranka
+  + aktiviraj(): void
+}
+
+class Kartica_lojalnosti <<entity>> {
+  - kartica_id: int
+  - stevilka_kartice: String
+  - datum_izdaje: Date
+  - status_posiljanja: String
+  + ustvari(stranka_id: int): Kartica_lojalnosti
+}
+
+class Status_stranke <<entity>> {
+  - status_id: int
+  - stranka_id: int
+  - nivo_id: int
+  - od: Date
+  - do: Date
+  + ustvari(stranka_id: int, nivo_id: int): Status_stranke
+}
+
+class Nivo_lojalnosti <<entity>> {
+  - nivo_id: int
+  - naziv: String
+  + najdiOsnovni(): Nivo_lojalnosti
+}
+
+' ===== RELACIJE =====
+RegistracijaForm       --> RegistracijaController  : registriraj()
+VerifikacijaEmailStran --> RegistracijaController  : potrdiEmail()
+
+RegistracijaController --> EmailService       : poslji()
+RegistracijaController --> Stranka            : ustvari
+RegistracijaController --> Kartica_lojalnosti : ustvari
+RegistracijaController --> Status_stranke     : ustvari
+
+Status_stranke --> Nivo_lojalnosti : nivo
+Kartica_lojalnosti --> Stranka     : pripada
+
+EmailService ..> Stranka : bere email
+
+@enduml

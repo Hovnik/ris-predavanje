@@ -1,0 +1,91 @@
+@startuml class-diagram-unovcevanje-nagrade
+
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor<<boundary>> #DBEAFE
+  BorderColor<<boundary>>     #1D4ED8
+  BackgroundColor<<control>>  #FEF9C3
+  BorderColor<<control>>      #B45309
+  BackgroundColor<<entity>>   #DCFCE7
+  BorderColor<<entity>>       #166534
+  ArrowColor                  #37474F
+  FontName                    Arial
+}
+
+title Razredni diagram — Unovčevanje nagrade [FZ23]
+
+' ===== BOUNDARY =====
+class KatalogNagradPogled <<boundary>> {
+  + prikaziNagrade(razpolozljiveTocke: int)
+  + izberaNagrodo(nagrada_id: int)
+}
+
+class PotrdilnoOkno <<boundary>> {
+  + prikaziPotrditev(nagrada: Nagrada, tocke: int)
+  + potrdi()
+  + prekini()
+}
+
+' ===== CONTROL =====
+class NagradaController <<control>> {
+  + pridobiKatalog(stranka_id: int): List
+  + unovcijNagrado(stranka_id: int, nagrada_id: int): UnovcitevRezultat
+}
+
+class PointsService <<control>> {
+  + preveriZadostnostTock(stranka_id: int, cena: int): boolean
+  + porabiTocke(stranka_id: int, tocke: int, opis: String): void
+}
+
+' ===== ENTITY =====
+class Nagrada <<entity>> {
+  - nagrada_id: int
+  - naziv: String
+  - opis: String
+  - cena_v_tockah: int
+  - aktivna: boolean
+  + najdiAktivne(): List
+  + najdiPoId(nagrada_id: int): Nagrada
+}
+
+class Unovcitev <<entity>> {
+  - unovcitev_id: int
+  - stranka_id: int
+  - nagrada_id: int
+  - datum: Date
+  - porabljene_tocke: int
+  + ustvari(stranka_id: int, nagrada_id: int, tocke: int): Unovcitev
+}
+
+class Tocke_stranke <<entity>> {
+  - tocke_id: int
+  - stranka_id: int
+  - skupaj_tock: int
+  + pridobiStanje(stranka_id: int): int
+  + zmanjsaj(delta: int): void
+}
+
+class Transakcija_tock <<entity>> {
+  - transakcija_id: int
+  - stranka_id: int
+  - tip: String
+  - tocke: int
+  - datum: Date
+  - opis: String
+  + ustvariPorabo(stranka_id: int, tocke: int, opis: String): void
+}
+
+' ===== RELACIJE =====
+KatalogNagradPogled --> NagradaController : pridobiKatalog()
+PotrdilnoOkno       --> NagradaController : unovcijNagrado()
+
+NagradaController --> PointsService : preveriTocke() / porabiTocke()
+NagradaController --> Nagrada       : najdiAktivne() / najdiPoId()
+NagradaController --> Unovcitev     : ustvari
+
+PointsService --> Tocke_stranke    : pridobiStanje() / zmanjsaj()
+PointsService --> Transakcija_tock : ustvariPorabo()
+
+Unovcitev --> Nagrada : referenca
+
+@enduml

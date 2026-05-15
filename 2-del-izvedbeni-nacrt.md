@@ -1030,3 +1030,63 @@ Job izvede:
 ## 3. Diagram primerov uporabe - V2
 
 <img src="shared/use-case-diagram-v2.png" alt="Diagram primerov uporabe - V2" style="max-width: 50%; height: auto;">
+
+### 3.1 Opisi primerov uporabe
+
+#### Stranka
+
+| Primer uporabe                              | Opis                                                                                                                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Registracija [FZ1–FZ3]**                  | Stranka se registrira v program lojalnosti z vnosom osebnih podatkov. Sistem ustvari račun z začetnim statusom `osnovni`, dodeli kartico lojalnosti in sproži postopek potrditve e-naslova. |
+| **Potrditev e-naslova [FZ3]** _(«include»)_ | Stranka potrdi lastništvo e-naslova s klikom na verifikacijsko povezavo iz e-pošte. Šele ob uspešni potrditvi se račun aktivira in prijava postane možna.                                   |
+| **Prijava**                                 | Stranka ali administrator se prijavi z e-naslovom in geslom. Sistem vrne JWT token, ki se uporablja za dostop do zaščitenih funkcij portala.                                                |
+| **Pregled profila in statusa**              | Prijavljena stranka pregleda svoje osebne podatke (ime, naslov, e-naslov) in trenutni statusni nivo lojalnosti ter datum, ko je status začel veljati.                                       |
+| **Pregled točk in transakcij [FZ22]**       | Stranka pregleda skupno število zbranih točk in kronološko zgodovino transakcij — dodelitve točk ob mesečnih obračunih in porabe ob unovčevanju nagrad.                                     |
+| **Pregled nakupov [FZ24, FZ25]**            | Stranka pregleda mesečne zneske nakupov po posameznih mesecih skupaj s statusom ob obračunu in dodeljenim številom točk za vsak mesec.                                                      |
+| **Unovčevanje nagrade [FZ23]**              | Stranka izbere nagrado iz kataloga in jo unovči za zbrane točke. Sistem preveri zadostnost točk, zmanjša stanje in zabeleži unovčitev.                                                      |
+| **Pregled kartice lojalnosti [FZ5]**        | Stranka pregleda podatke o svoji kartici lojalnosti: številko kartice, datum izdaje in status pošiljanja po navadni pošti.                                                                  |
+
+#### Administrator
+
+| Primer uporabe                          | Opis                                                                                                                                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Uvoz nakupov iz CSV [FZ10]**          | Administrator ročno naloži CSV datoteko z mesečnimi zneski nakupov strank, ki jo pripravi poslovni IS. Sistem validira vsako vrstico in shrani podatke kot osnovo za mesečni obračun.          |
+| **Mesečni obračun [FZ9, FZ21]**         | Administrator ali Cron Job sproži mesečni obračun za pretekli mesec. Sistem najprej posodobi statusne nivoje vseh članov glede na pravila prehodov, nato dodeli točke glede na točkovnik.      |
+| **Pregled stanja obračuna**             | Administrator pregleda rezultate mesečnega obračuna za izbrani mesec: stanje uvoza nakupov, število posodobitev statusov, skupaj dodeljene točke in čas izvedbe.                               |
+| **Pregled članov [FZ26]**               | Administrator pregleda seznam vseh članov programa s filtri po statusu, imenu/e-naslovu in časovnem obdobju. Iz seznama dostopa do podrobnega pregleda posameznega člana z zgodovino statusov. |
+| **Pregled statistike nakupov [FZ27]**   | Administrator pregleda agregirano statistiko za izbrano obdobje: porazdelitev članov po statusih, skupni znesek nakupov, skupaj dodeljene točke in mesečni pregled aktivnosti.                 |
+| **Izvoz podatkov za pošiljanje kartic** | Administrator izvozi CSV datoteko s poštnimi naslovi članov, ki jim kartice lojalnosti še niso bile poslane, za namen fizičnega pošiljanja po navadni pošti.                                   |
+| **Upravljanje nagrad [FZ29]**           | Administrator upravlja katalog nagrad: dodaja nove nagrade z opisom in ceno v točkah, ureja obstoječe ter deaktivira tiste, ki niso več na voljo (soft delete).                                |
+| **Upravljanje pravil [FZ12, FZ30]**     | Administrator ureja vrednosti točkovnika (točke glede na zneskovni razred in statusni nivo) ter pragove za prehode med statusnimi nivoji, brez posegov v logiko sistema.                       |
+
+#### Sistemski akterji
+
+| Akter                 | Primer uporabe                | Opis                                                                                                                                                |
+| --------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cron Job**          | Mesečni obračun               | Vsak 1. v mesecu ob 02:00 avtomatsko sproži mesečni obračun za pretekli mesec, če so nakupi že uvoženi. Ob napaki pošlje opozorilo administratorju. |
+| **Poslovni IS**       | Uvoz nakupov iz CSV           | Zunanja aplikacija trade verige pripravi CSV izvoz mesečnih nakupov po strankah, ki ga administrator prenese in uvozi v sistem.                     |
+| **E-poštni strežnik** | Registracija, Mesečni obračun | Posreduje verifikacijsko e-pošto ob registraciji ter alarmno e-pošto administratorju ob morebitni napaki med mesečnim obračunom.                    |
+
+---
+
+## 4. Razredni diagrami (BCE)
+
+Razredni diagrami sledijo vzorcu **Boundary–Control–Entity (BCE)**:
+
+| Tip            | Barva  | Vloga                                                                            |
+| -------------- | ------ | -------------------------------------------------------------------------------- |
+| `<<boundary>>` | modra  | Vmesniški razredi — zaslonske maske in API-ji, ki komunicirajo z zunanjim svetom |
+| `<<control>>`  | rumena | Kontrolni razredi — vsebujejo poslovno logiko in orkestrirajo tok uporabe        |
+| `<<entity>>`   | zelena | Entitetni razredi — podatkovni modeli, ki se preslikajo na tabele v bazi         |
+
+### 4.1 Registracija [FZ1–FZ3]
+
+<img src="shared/class-diagram-registracija.png" alt="Razredni diagram — Registracija" width="1100"/>
+
+### 4.2 Mesečni obračun [FZ9, FZ21]
+
+<img src="shared/class-diagram-mesecni-obracun.png" alt="Razredni diagram — Mesečni obračun" width="1100"/>
+
+### 4.3 Unovčevanje nagrade [FZ23]
+
+<img src="shared/class-diagram-unovcevanje-nagrade.png" alt="Razredni diagram — Unovčevanje nagrade" width="1100"/>
