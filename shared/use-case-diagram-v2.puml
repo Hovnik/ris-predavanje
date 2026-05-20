@@ -23,6 +23,7 @@ actor "Administrator" as Admin
 actor "Cron Job" as CronJob <<system>>
 actor "Poslovni IS" as BizIS <<external>>
 actor "E-poštni strežnik" as EmailSrv <<external>>
+actor "Tiskarna / Poštna služba" as PostSrv <<external>>
 
 ' ===== SYSTEM BOUNDARY =====
 rectangle "IS Program lojalnosti Maestro" {
@@ -77,6 +78,7 @@ CronJob --> UC_RunBatch
 BizIS --> UC_ImportCSV : "izvoz nakupov (CSV)"
 UC_Register --> EmailSrv : "verifikacijska e-pošta"
 UC_RunBatch --> EmailSrv : "alarm ob napaki"
+UC_CardExport --> PostSrv : "izvoz naslovov za pošiljanje"
 
 ' ===== INCLUDE =====
 UC_Register .> UC_VerifyEmail : <<include>>
