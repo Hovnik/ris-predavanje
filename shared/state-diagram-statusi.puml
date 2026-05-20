@@ -1,0 +1,67 @@
+@startuml state-diagram-statusi
+
+skinparam state {
+  BackgroundColor     #FFFDE7
+  BorderColor         #5D4037
+  ArrowColor          #37474F
+  FontName            Arial
+  StartColor          #1A237E
+  EndColor            #1A237E
+}
+skinparam note {
+  BackgroundColor #E3F2FD
+  BorderColor     #1A237E
+}
+
+title Diagram prehajanja stanj — Statusi lojalnosti\nIS Program lojalnosti Maestro
+
+[*] --> Osnovni : registracija
+
+state Osnovni {
+  Osnovni : Začetni status ob včlanitvi.
+}
+
+state Bronasti {
+  Bronasti : Stranka je izgubila srebrni status.
+}
+
+state Srebrni {
+  Srebrni : Standardni napredovani status.
+}
+
+state Zlati {
+  Zlati : Najvišji status lojalnosti.
+}
+
+' ===== OSNOVNI =====
+Osnovni --> Srebrni  : nakupi ≥ 500 EUR\n(prvič)
+Osnovni --> Osnovni  : nakupi < 500 EUR
+
+' ===== SREBRNI =====
+Srebrni --> Srebrni  : 200 EUR ≤ nakupi < 500 EUR
+Srebrni --> Zlati    : nakupi ≥ 500 EUR\n(še 2× zapored v srebrnem)
+Srebrni --> Bronasti : 2 zaporedna meseca\nnakupi < 200 EUR
+
+' ===== ZLATI =====
+Zlati --> Zlati    : nakupi ≥ 500 EUR
+Zlati --> Srebrni  : nakupi < 500 EUR
+
+' ===== BRONASTI =====
+Bronasti --> Srebrni  : 2 zaporedna meseca\nnakupi ≥ 200 EUR
+Bronasti --> Osnovni  : nakupi < 50 EUR
+Bronasti --> Bronasti : 50 EUR ≤ nakupi < 200 EUR\nali samo 1 mesec ≥ 200 EUR
+
+note right of Zlati
+  Prehod zlati → srebrni nastopi,
+  ko mesečni nakupi padejo pod 500 EUR.
+  Prehod srebrni → bronasti nastopi šele
+  po **dveh** zaporednih mesecih pod 200 EUR.
+end note
+
+note bottom of Bronasti
+  Zaporedje mesečne obdelave:
+  1. posodobitev statusa
+  2. dodelitev točk
+end note
+
+@enduml
