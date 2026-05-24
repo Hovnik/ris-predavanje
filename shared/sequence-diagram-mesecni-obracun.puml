@@ -1,0 +1,83 @@
+@startuml sequence-diagram-mesecni-obracun
+
+skinparam sequence {
+  ArrowColor                #37474F
+  LifeLineBorderColor       #37474F
+  ParticipantBorderColor    #37474F
+  ParticipantBackgroundColor #FFFFFF
+  ActorBorderColor          #37474F
+  ActorBackgroundColor      #FFFFFF
+  FontName                  Arial
+}
+skinparam roundCorner 8
+
+title Diagram zaporedja — Pripis tock (Mesecni obracun) [FZ9, FZ11, FZ13–FZ21]
+
+actor    "Administrator" as A
+boundary "UvozNakupovForm" as UF #DBEAFE
+control  "BatchController" as BC #FEF9C3
+control  "BatchService" as BS #FEF9C3
+entity   "Obracun_mesecni" as OM #DCFCE7
+entity   "Nakup_mesecni" as NM #DCFCE7
+entity   "Status_stranke" as SS #DCFCE7
+entity   "Tocke_stranke" as TS #DCFCE7
+control  "EmailService" as ES #FEF9C3
+
+== Sprozitev obracuna ==
+A  -> UF : naloziCSV(datoteka), izbereMesec(mesec)
+A  -> UF : sprozi()
+UF -> BC : uvozNakupov(datoteka, mesec)
+
+BC -> OM : preveriObstojeci(mesec)
+OM --> BC : status
+
+alt obracun za mesec se ni izveden
+    BC -> BS : uvozi(datoteka, mesec)
+
+    alt CSV je veljaven
+        BS -> NM : uvozi(zapisi)
+        NM --> BS : st. uvozenih zapisov
+        BS --> BC : uspeh
+
+        BC -> BS : izvedeObracun(mesec)
+        BS -> OM : ustvari(mesec)
+
+        loop za vsakega aktivnega clana
+            BS -> NM : najdiZaMesec(stranka_id, mesec)
+            NM --> BS : znesek (ali 0 EUR — alt. tok B)
+
+            == Posodobitev statusa (FZ13–FZ20) ==
+            BS -> SS : zakljuciTekoci(stranka_id)
+            BS -> SS : ustvariNovi(stranka_id, nov_nivo_id)
+            SS --> BS : nov status
+
+            == Dodelitev tock (FZ11) ==
+            BS -> TS : posodobiStanje(stranka_id, delta_tock)
+            TS --> BS : novo skupno stanje
+        end
+
+        BS -> OM : zakljuci(obdelanih_clanov, skupaj_tock)
+        OM --> BS : zakljuceno
+        BS --> BC : poročilo
+        BC --> UF : poročilo
+        UF --> A  : prikaz uspesno zakljucenega obracuna
+
+    else CSV je napacnega formata (alt. tok A)
+        BS --> BC : INVALID_FILE_FORMAT
+        BC --> UF : napaka z opisom
+        UF --> A  : popravi datoteko in ponovno nalozi
+    end
+
+else obracun je ze bil izveden (alt. tok C)
+    BC --> UF : BATCH_ALREADY_RUN
+    UF --> A  : "Obracun za ta mesec je ze bil izveden."
+end
+
+== Napaka med izvajanjem (alt. tok D) ==
+group [pri napaki med posodobitvijo statusov ali tock]
+    BS -> OM : ohrani delno stanje (revizija)
+    BS -> ES : posljiAlarm(administrator)
+    ES --> A : e-postni alarm
+end
+
+@enduml

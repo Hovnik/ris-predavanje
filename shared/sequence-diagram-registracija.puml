@@ -1,0 +1,80 @@
+@startuml sequence-diagram-registracija
+
+skinparam sequence {
+  ArrowColor                #37474F
+  LifeLineBorderColor       #37474F
+  ParticipantBorderColor    #37474F
+  ParticipantBackgroundColor #FFFFFF
+  ActorBorderColor          #37474F
+  ActorBackgroundColor      #FFFFFF
+  FontName                  Arial
+}
+skinparam roundCorner 8
+
+title Diagram zaporedja — Registracija uporabnika [FZ1–FZ3]
+
+actor "Stranka" as S
+boundary "RegistracijaForm" as RF #DBEAFE
+control  "RegistracijaController" as RC #FEF9C3
+control  "EmailService" as ES #FEF9C3
+entity   "Stranka" as ES_E #DCFCE7
+entity   "Kartica_lojalnosti" as KL #DCFCE7
+entity   "Status_stranke" as SS #DCFCE7
+entity   "Nivo_lojalnosti" as NL #DCFCE7
+boundary "VerifikacijaEmailStran" as VES #DBEAFE
+
+== Vnos podatkov ==
+S  -> RF : vnesiPodatke(ime, priimek, email, geslo, naslov)
+S  -> RF : potrdiRegistracijo()
+RF -> RC : registriraj(ime, priimek, email, geslo, naslov)
+
+== Validacija in shranjevanje ==
+RC -> ES_E : preveriEmail(email)
+ES_E --> RC : neObstaja
+
+alt obvezna polja so prisotna in email je prost
+    RC -> ES_E : ustvari(email_verificiran = false)
+    ES_E --> RC : stranka
+
+    RC -> ES : generirajZeton()
+    ES --> RC : zeton
+    RC -> ES : posljiVerifikacijskoEmail(email, zeton)
+    ES --> S  : verifikacijsko e-sporocilo
+
+    RF --> S : prikaz uspesne oddaje
+else email ze obstaja (alt. tok A)
+    RC --> RF : napaka EMAIL_ALREADY_EXISTS
+    RF --> S  : "E-naslov je ze v uporabi."
+else nepopolni ali neveljavni podatki (alt. tok C)
+    RC --> RF : napaka VALIDATION_ERROR
+    RF --> S  : oznaci polja in prikazi napake
+end
+
+== Potrditev e-naslova ==
+S   -> VES : klikni verifikacijsko povezavo(zeton)
+VES -> RC  : potrdiEmail(zeton)
+
+alt zeton je veljaven
+    RC -> ES_E : aktiviraj()
+    ES_E --> RC : email_verificiran = true
+
+    RC -> NL : najdiOsnovni()
+    NL --> RC : nivo_osnovni
+
+    RC -> SS : ustvari(stranka_id, nivo_osnovni.nivo_id)
+    SS --> RC : status
+
+    RC -> KL : ustvari(stranka_id)
+    KL --> RC : kartica (status_posiljanja = v pripravi)
+
+    RC --> VES : uspeh
+    VES --> S  : preusmeritev na stran uspesne registracije
+else zeton je potekel (alt. tok B)
+    RC --> VES : INVALID_OR_EXPIRED_TOKEN
+    VES --> S  : ponudi ponovno posiljanje verifikacije
+    S   -> VES : zahtevaj nov zeton
+    VES -> RC  : ponovnoPosljiZeton(email)
+    RC  -> ES  : generirajZeton() / posljiVerifikacijskoEmail()
+end
+
+@enduml
